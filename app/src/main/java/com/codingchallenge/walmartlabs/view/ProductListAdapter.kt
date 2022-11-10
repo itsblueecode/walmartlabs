@@ -18,7 +18,7 @@ import com.squareup.picasso.Picasso
  * @Date 08, November, 2022
  * @Project WalmartLabs
  * @Copyright (c). All rights reserved.
- * @Description TODO ADD CLASS DESCRIPTION HERE!!!
+ * @Description
  */
 class ProductListAdapter : PagingDataAdapter<ProductModel,
         RecyclerView.ViewHolder>(ProductDiffCallBack) {

@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">WalmartLabs</string>
+    <string name="error">Something went wrong</string>
+    <string name="no_products">No products found</string>
+    <string name="tap_to_retry">Tap to Retry</string>
+</resources>

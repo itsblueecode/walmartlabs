@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <dimen name="nano">1dp</dimen>
+    <dimen name="micro">2dp</dimen>
+    <dimen name="small">4dp</dimen>
+    <dimen name="medium">8dp</dimen>
+    <dimen name="large">12dp</dimen>
+    <dimen name="x_large">16dp</dimen>
+    <dimen name="xx_large">32dp</dimen>
+    <dimen name="xxx_large">50dp</dimen>
+
+    <dimen name="text_size_nano">10sp</dimen>
+    <dimen name="text_size_micro">12sp</dimen>
+    <dimen name="text_size_small">14sp</dimen>
+    <dimen name="text_size_medium">17sp</dimen>
+    <dimen name="text_size_large">20sp</dimen>
+    <dimen name="text_size_x_large">25sp</dimen>
+    <dimen name="text_size_xx_large">35sp</dimen>
+    <dimen name="text_size_xxx_large">55sp</dimen>
+
+    <dimen name="window_padding">@dimen/x_large</dimen>
+
+
+    <dimen name="micro_curve_edge">4dp</dimen>
+    <dimen name="semi_curve_edge">12dp</dimen>
+    <dimen name="full_curve_edge">23dp</dimen>
+    <dimen name="app_curve_edge">@dimen/micro_curve_edge</dimen>
+
+</resources>

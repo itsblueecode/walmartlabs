@@ -2,19 +2,18 @@ package com.codingchallenge.walmartlabs.view
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
-import androidx.paging.LoadState
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.codingchallenge.walmartlabs.R
 import com.codingchallenge.walmartlabs.databinding.ActivityMainBinding
+import com.codingchallenge.walmartlabs.networking.ErrorManager
 import com.codingchallenge.walmartlabs.networking.RetrofitClient
-import com.codingchallenge.walmartlabs.repository.ProductInterface
-import com.codingchallenge.walmartlabs.viewmodel.ProductListViewModelFactory
-import com.codingchallenge.walmartlabs.viewmodel.ProductsListViewModel
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import com.codingchallenge.walmartlabs.repository.CountriesInterface
+import com.codingchallenge.walmartlabs.viewmodel.CountriesListViewModel
+import com.codingchallenge.walmartlabs.viewmodel.CountriesListViewModelFactory
 
 
 /**
@@ -22,7 +21,7 @@ import kotlinx.coroutines.launch
  * @Date 25, October, 2022
  * @Project WalmartLabs
  * @Copyright (c) 2022. All rights reserved.
- * @Description Show school list
+ * @Description Show countries list
  */
 class MainActivity : AppCompatActivity() {
 
@@ -30,16 +29,13 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
-
     // OBJECTS
 
-    private lateinit var adapter : ProductListAdapter
-    private lateinit var loadStateAdapter: ProductsLoadStateAdapter
+    private lateinit var adapter: CountriesListAdapter
+    private lateinit var countriesListViewModel: CountriesListViewModel
 
-    private lateinit var productsListViewModel: ProductsListViewModel
-
-    private val retrofit = RetrofitClient.getInstance(ProductInterface.BASE_URL)
-    private val api: ProductInterface = retrofit.create(ProductInterface::class.java)
+    private val retrofit = RetrofitClient.getInstance(CountriesInterface.BASE_URL)
+    private val api: CountriesInterface = retrofit.create(CountriesInterface::class.java)
 
 
     /** methods **/
@@ -48,63 +44,83 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
-        supportActionBar?.title = "Walmart Products"
         setContentView(binding.root)
 
-        initViewModel()
-        initLayout()
-        initProductList()
+        setupViewModel()
+        setupLayout()
+        addCountriesListObservers()
     }
 
-    private fun initViewModel() {
-        val factory = ProductListViewModelFactory(api)
-        productsListViewModel = ViewModelProvider(
+    override fun onStart() {
+        super.onStart()
+        getCountries()
+    }
+
+    private fun setupViewModel() {
+        val factory = CountriesListViewModelFactory(api)
+        countriesListViewModel = ViewModelProvider(
             this, factory
-        )[ProductsListViewModel::class.java]
+        )[CountriesListViewModel::class.java]
     }
 
-    private fun initLayout() {
-        binding.srlAction.setOnRefreshListener {
-            adapter.refresh()
-            binding.srlAction.isRefreshing = false
+    private fun setupLayout() {
+        binding.srlAction.apply {
+            setColorSchemeColors(
+                ContextCompat.getColor(context, R.color.color_primary_normal),
+                ContextCompat.getColor(context, R.color.color_primary_normal),
+                ContextCompat.getColor(context, R.color.color_primary_normal)
+            )
+            setOnRefreshListener {
+                refresh()
+            }
         }
         binding.rvList.apply {
-            layoutManager = LinearLayoutManager(context)
             isMotionEventSplittingEnabled = false
-            setHasFixedSize(true)
+            layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
+            addItemDecoration(DividerItemDecoration(context, LinearLayoutManager.VERTICAL))
         }
-        adapter = ProductListAdapter()
-        loadStateAdapter = ProductsLoadStateAdapter { adapter.retry() }
-        binding.rvList.adapter = adapter.withLoadStateFooter(
-            footer = loadStateAdapter
-        )
         binding.tvRetry.setOnClickListener {
-            adapter.retry()
+            refresh()
         }
     }
 
-    private fun initProductList() {
-        lifecycleScope.launch {
-            adapter.loadStateFlow.collectLatest { loadStates ->
-                binding.pbLoad.isVisible = loadStates.refresh is LoadState.Loading
-                binding.tvInfo.isVisible = loadStates.refresh is LoadState.Error
-                binding.tvRetry.isVisible = loadStates.refresh is LoadState.Error
-                if (loadStates.refresh is LoadState.NotLoading && adapter.itemCount == 0) {
-                    binding.tvInfo.isVisible = true
-                    binding.tvInfo.text = getString(R.string.no_products)
-                    binding.rvList.isVisible = false
-                } else {
-                    binding.rvList.isVisible = true
-                }
-                if (loadStates.source.refresh is LoadState.Error) {
-                    binding.tvInfo.text = (loadStates.source.refresh as LoadState.Error).error.localizedMessage ?: getString(R.string.error)
+    private fun addCountriesListObservers() {
+        countriesListViewModel.isLoading.observe(this) {
+            binding.pbLoad.isVisible = it
+        }
+        countriesListViewModel.countries.observe(this) {
+            if (it.exception != null) {
+                showInfoView(true)
+                binding.tvInfo.text = ErrorManager(it.exception).message
+            } else {
+                it.data?.let { list ->
+                    if (list.isNotEmpty()) {
+                        showInfoView(false)
+                        adapter = CountriesListAdapter(this, list)
+                        binding.rvList.adapter = adapter
+                    } else {
+                        showInfoView(true)
+                        binding.tvInfo.text = resources.getString(R.string.no_countries)
+                    }
                 }
             }
         }
-        lifecycleScope.launch {
-            productsListViewModel.productsList.collectLatest { products ->
-                adapter.submitData(products)
-            }
-        }
+    }
+
+    private fun getCountries() {
+        countriesListViewModel.getCountries()
+    }
+
+    private fun refresh() {
+        showInfoView(false)
+        binding.rvList.adapter = CountriesListAdapter(this, listOf())
+        binding.srlAction.isRefreshing = false
+        getCountries()
+    }
+
+    private fun showInfoView(showError: Boolean) {
+        binding.tvInfo.isVisible = showError
+        binding.tvRetry.isVisible = showError
+        binding.rvList.isVisible = !showError
     }
 }
